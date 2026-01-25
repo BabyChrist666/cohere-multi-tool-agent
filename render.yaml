@@ -1,0 +1,12 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: cohere-agent
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: COHERE_API_KEY
+        sync: false
+      - key: PORT
+        value: 8000
