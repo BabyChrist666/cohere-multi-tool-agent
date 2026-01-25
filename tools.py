@@ -10,98 +10,70 @@ from duckduckgo_search import DDGS
 from bs4 import BeautifulSoup
 
 
-# Tool definitions for Cohere API
+# Tool definitions for Cohere API (native format)
 TOOL_DEFINITIONS = [
     {
-        "type": "function",
-        "function": {
-            "name": "web_search",
-            "description": "Search the web for current information. Use this for questions about recent events, facts, or anything that requires up-to-date information.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The search query to look up"
-                    },
-                    "num_results": {
-                        "type": "integer",
-                        "description": "Number of results to return (default 5, max 10)"
-                    }
-                },
-                "required": ["query"]
+        "name": "web_search",
+        "description": "Search the web for current information. Use this for questions about recent events, facts, or anything that requires up-to-date information.",
+        "parameter_definitions": {
+            "query": {
+                "type": "str",
+                "description": "The search query to look up",
+                "required": True
+            },
+            "num_results": {
+                "type": "int",
+                "description": "Number of results to return (default 5, max 10)",
+                "required": False
             }
         }
     },
     {
-        "type": "function",
-        "function": {
-            "name": "calculator",
-            "description": "Perform mathematical calculations. Supports basic arithmetic, exponents, and common math functions.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "expression": {
-                        "type": "string",
-                        "description": "Mathematical expression to evaluate (e.g., '2 + 2', 'sqrt(16)', '10 ** 2')"
-                    }
-                },
-                "required": ["expression"]
+        "name": "calculator",
+        "description": "Perform mathematical calculations. Supports basic arithmetic, exponents, and common math functions.",
+        "parameter_definitions": {
+            "expression": {
+                "type": "str",
+                "description": "Mathematical expression to evaluate (e.g., '2 + 2', 'sqrt(16)', '10 ** 2')",
+                "required": True
             }
         }
     },
     {
-        "type": "function",
-        "function": {
-            "name": "execute_python",
-            "description": "Execute Python code and return the result. Use for data processing, calculations, or generating outputs.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "code": {
-                        "type": "string",
-                        "description": "Python code to execute. The last expression or print output will be returned."
-                    }
-                },
-                "required": ["code"]
+        "name": "execute_python",
+        "description": "Execute Python code and return the result. Use for data processing, calculations, or generating outputs.",
+        "parameter_definitions": {
+            "code": {
+                "type": "str",
+                "description": "Python code to execute. The last expression or print output will be returned.",
+                "required": True
             }
         }
     },
     {
-        "type": "function",
-        "function": {
-            "name": "scrape_webpage",
-            "description": "Fetch and extract text content from a webpage URL.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "description": "The URL of the webpage to scrape"
-                    },
-                    "max_length": {
-                        "type": "integer",
-                        "description": "Maximum characters to return (default 5000)"
-                    }
-                },
-                "required": ["url"]
+        "name": "scrape_webpage",
+        "description": "Fetch and extract text content from a webpage URL.",
+        "parameter_definitions": {
+            "url": {
+                "type": "str",
+                "description": "The URL of the webpage to scrape",
+                "required": True
+            },
+            "max_length": {
+                "type": "int",
+                "description": "Maximum characters to return (default 5000)",
+                "required": False
             }
         }
     },
     {
-        "type": "function",
-        "function": {
-            "name": "get_current_time",
-            "description": "Get the current date and time in various formats.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "timezone": {
-                        "type": "string",
-                        "description": "Timezone (e.g., 'UTC', 'US/Eastern', 'Asia/Tokyo'). Default is UTC."
-                    }
-                },
-                "required": []
+        "name": "get_current_time",
+        "description": "Get the current date and time in various formats.",
+        "parameter_definitions": {
+            "timezone": {
+                "type": "str",
+                "description": "Timezone (e.g., 'UTC', 'US/Eastern', 'Asia/Tokyo'). Default is UTC.",
+                "required": False
             }
         }
     }
