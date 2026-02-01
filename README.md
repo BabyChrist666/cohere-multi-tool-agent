@@ -20,13 +20,13 @@
 
 **`[ AGENTIC WORKFLOWS // TOOL ORCHESTRATION // COMMAND R+ ]`**
 
-*Enter the void. Execute with precision.*
+*Autonomous tool orchestration powered by Cohere Command R+.*
 
 ```
     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
     ░░      ▄▄▄▄      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░      ░░
-    ░░    ▄█████▄     ░░     AN AUTONOMOUS AGENT THAT WIELDS TOOLS        ░░░░
-    ░░   ▄███████▄    ░░     TO ACCOMPLISH ANY TASK IN THE DIGITAL REALM  ░░░░
+    ░░    ▄█████▄     ░░     AN AUTONOMOUS AGENT THAT USES TOOLS           ░░░░
+    ░░   ▄███████▄    ░░     TO ACCOMPLISH ANY TASK AUTONOMOUSLY          ░░░░
     ░░  ▀▀███████▀▀   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ```
