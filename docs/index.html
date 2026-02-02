@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Tool AI Agent | Autonomous Tool Orchestration</title>
+    <meta name="description" content="Autonomous AI agent with web search, code execution, math, and web scraping. Powered by Cohere Command R+.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #050507;
+            --bg-secondary: #0a0a0f;
+            --bg-card: #0d0d14;
+            --bg-card-hover: #12121c;
+            --accent: #6e56cf;
+            --accent-glow: #7c66dc;
+            --accent-dim: rgba(110,86,207,0.12);
+            --accent-border: rgba(110,86,207,0.25);
+            --text-primary: #ededef;
+            --text-secondary: #9494a0;
+            --text-tertiary: #5e5e6e;
+            --border: rgba(255,255,255,0.06);
+            --border-strong: rgba(255,255,255,0.1);
+            --success: #45d483;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Ambient Background */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ambient::before {
+            content: '';
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            top: -25%;
+            left: -25%;
+            background:
+                radial-gradient(ellipse 600px 600px at 30% 20%, rgba(110,86,207,0.08), transparent),
+                radial-gradient(ellipse 500px 500px at 70% 60%, rgba(110,86,207,0.05), transparent),
+                radial-gradient(ellipse 400px 400px at 50% 80%, rgba(69,212,131,0.03), transparent);
+            animation: drift 20s ease-in-out infinite alternate;
+        }
+
+        .ambient::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            opacity: 0.4;
+        }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(2%, -3%) rotate(1deg); }
+            100% { transform: translate(-1%, 2%) rotate(-0.5deg); }
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Nav */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(5,5,7,0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--accent-glow);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+            background: var(--border);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-sans);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(110,86,207,0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-glow);
+            box-shadow: 0 0 30px rgba(110,86,207,0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: var(--border);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-strong);
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            background: var(--border-strong);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 10rem 2rem 4rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 1rem;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: var(--accent-glow);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 560px;
+            margin: 0 auto 2rem;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Stats */
+        .stats {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 2rem 4rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .stat {
+            background: var(--bg-card);
+            padding: 1.75rem;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .stat:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-glow);
+            font-family: var(--font-mono);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Sections */
+        section {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 5rem 2rem;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-glow);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-desc {
+            color: var(--text-secondary);
+            max-width: 520px;
+            font-size: 0.95rem;
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            transition: background 0.2s;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Architecture */
+        .arch-diagram {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            overflow-x: auto;
+        }
+
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            min-width: 700px;
+            flex-wrap: nowrap;
+        }
+
+        .arch-node {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            text-align: center;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .arch-node.primary {
+            border-color: var(--accent-border);
+            background: var(--accent-dim);
+        }
+
+        .arch-node .label {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.35rem;
+        }
+
+        .arch-node .name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .arch-node.primary .name {
+            color: var(--accent-glow);
+        }
+
+        .arch-connector {
+            color: var(--text-tertiary);
+            font-size: 1.2rem;
+            padding: 0 0.6rem;
+            flex-shrink: 0;
+        }
+
+        .arch-tool-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .arch-tool-group .arch-node {
+            padding: 0.6rem 1rem;
+        }
+
+        .arch-tool-group .arch-node .name {
+            font-size: 0.78rem;
+        }
+
+        /* Tools Section */
+        .tools-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .tool-item {
+            background: var(--bg-card);
+            padding: 1.25rem 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            transition: background 0.2s;
+        }
+
+        .tool-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .tool-name {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--accent-glow);
+            min-width: 140px;
+        }
+
+        .tool-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            flex: 1;
+        }
+
+        .tool-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            background: var(--accent-dim);
+            border: 1px solid var(--accent-border);
+            border-radius: 100px;
+            color: var(--accent-glow);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* Code Section */
+        .code-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .code-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .code-tab {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            transition: color 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .code-tab:hover {
+            color: var(--text-secondary);
+        }
+
+        .code-tab.active {
+            color: var(--accent-glow);
+            box-shadow: inset 0 -2px 0 var(--accent);
+        }
+
+        .code-block {
+            display: none;
+            padding: 1.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            overflow-x: auto;
+        }
+
+        .code-block.active {
+            display: block;
+        }
+
+        .code-block .comment { color: var(--text-tertiary); }
+        .code-block .keyword { color: var(--accent-glow); }
+        .code-block .string { color: var(--success); }
+        .code-block .func { color: #e0a4ff; }
+
+        /* Tech Tags */
+        .tech-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tech-tag {
+            padding: 0.45rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .tech-tag:hover {
+            border-color: var(--accent-border);
+            color: var(--text-primary);
+        }
+
+        /* CTA */
+        .cta {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem 5rem;
+        }
+
+        .cta-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-border), transparent);
+        }
+
+        .cta-card h2 {
+            font-size: 1.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .cta-card p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .cta-card .hero-actions {
+            justify-content: center;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        footer .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        footer p {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        footer .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        footer .footer-links a {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer .footer-links a:hover {
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .hero { padding: 8rem 1.5rem 3rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .features-grid { grid-template-columns: 1fr; }
+            .nav-links a:not(.btn) { display: none; }
+            .arch-flow { flex-direction: column; min-width: unset; gap: 0; }
+            .arch-connector { transform: rotate(90deg); padding: 0.4rem 0; }
+            .arch-tool-group { flex-direction: column; width: 100%; }
+            .arch-tool-group .arch-node { width: 100%; }
+            .arch-diagram { padding: 2rem 1rem; }
+            section { padding: 3rem 1.5rem; }
+            h2 { font-size: 1.6rem; }
+            .tool-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .tool-name { min-width: unset; }
+            footer .footer-inner { flex-direction: column; gap: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 1.75rem; }
+            .hero-sub { font-size: 0.95rem; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat { padding: 1.25rem; }
+            .stat-value { font-size: 1.2rem; }
+            .hero-actions { flex-direction: column; align-items: center; }
+            .btn { width: 100%; justify-content: center; }
+            .cta-card { padding: 3rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient"></div>
+    <div class="wrapper">
+
+        <!-- Nav -->
+        <nav>
+            <div class="nav-inner">
+                <a href="#" class="nav-logo">
+                    <div class="icon">T</div>
+                    Multi-Tool Agent
+                </a>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#tools">Tools</a>
+                    <a href="#architecture">Architecture</a>
+                    <a href="https://github.com/BabyChrist666/cohere-multi-tool-agent" class="btn btn-ghost" target="_blank" rel="noopener">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        GitHub
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-badge">Autonomous Agent</div>
+            <h1>One agent. Every tool it needs.</h1>
+            <p class="hero-sub">
+                Autonomous tool orchestration powered by Cohere Command R+. The agent reasons about your query, selects the right tools, and synthesizes results across multi-turn conversations.
+            </p>
+            <div class="hero-actions">
+                <a href="https://github.com/BabyChrist666/cohere-multi-tool-agent" class="btn btn-primary" target="_blank" rel="noopener">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    View on GitHub
+                </a>
+                <a href="#features" class="btn btn-ghost">Explore Features</a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stats-grid">
+                <div class="stat">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">Built-in Tools</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">Multi</div>
+                    <div class="stat-label">Turn Conversations</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">Auto</div>
+                    <div class="stat-label">Tool Selection</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">Real</div>
+                    <div class="stat-label">Time Execution</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <section id="features">
+            <div class="section-label">Capabilities</div>
+            <h2>Intelligent tool orchestration</h2>
+            <p class="section-desc">
+                The agent analyzes each query, selects the optimal tool, executes it, and returns synthesized results &mdash; all autonomously.
+            </p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#128269;</div>
+                    <h3>Web Search</h3>
+                    <p>Real-time web search to fetch current information, news, and answers from across the internet.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128187;</div>
+                    <h3>Code Execution</h3>
+                    <p>Execute Python code in a sandboxed environment. Run scripts, test logic, and compute results on the fly.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128290;</div>
+                    <h3>Math Engine</h3>
+                    <p>Evaluate mathematical expressions with precision. Supports arithmetic, algebra, and scientific functions.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#127760;</div>
+                    <h3>Web Scraping</h3>
+                    <p>Extract structured content from any URL. Parse HTML, pull text, and retrieve page data programmatically.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9889;</div>
+                    <h3>Auto Tool Selection</h3>
+                    <p>Cohere Command R+ reasons about your query and selects the right tool without manual configuration.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128200;</div>
+                    <h3>Multi-Turn Memory</h3>
+                    <p>Maintains conversation context across turns, enabling follow-up questions and iterative exploration.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture -->
+        <section id="architecture">
+            <div class="section-label">Architecture</div>
+            <h2>How it works</h2>
+            <p class="section-desc">
+                A linear pipeline from query to synthesized response, with intelligent branching at the tool selection layer.
+            </p>
+            <div class="arch-diagram">
+                <div class="arch-flow">
+                    <div class="arch-node">
+                        <div class="label">Input</div>
+                        <div class="name">User Query</div>
+                    </div>
+                    <div class="arch-connector">&rarr;</div>
+                    <div class="arch-node primary">
+                        <div class="label">LLM</div>
+                        <div class="name">Cohere Command R+</div>
+                    </div>
+                    <div class="arch-connector">&rarr;</div>
+                    <div class="arch-node primary">
+                        <div class="label">Router</div>
+                        <div class="name">Tool Selector</div>
+                    </div>
+                    <div class="arch-connector">&rarr;</div>
+                    <div class="arch-tool-group">
+                        <div class="arch-node">
+                            <div class="name">Web Search</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="name">Code Exec</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="name">Math</div>
+                        </div>
+                        <div class="arch-node">
+                            <div class="name">Scraper</div>
+                        </div>
+                    </div>
+                    <div class="arch-connector">&rarr;</div>
+                    <div class="arch-node primary">
+                        <div class="label">Output</div>
+                        <div class="name">Response Synthesis</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tools -->
+        <section id="tools">
+            <div class="section-label">Tool Registry</div>
+            <h2>Available tools</h2>
+            <p class="section-desc">
+                Each tool is registered with a schema that the LLM uses to decide when and how to invoke it.
+            </p>
+            <div class="tools-list">
+                <div class="tool-item">
+                    <span class="tool-name">web_search</span>
+                    <span class="tool-desc">Search the web for real-time information using a query string</span>
+                    <span class="tool-badge">Search</span>
+                </div>
+                <div class="tool-item">
+                    <span class="tool-name">execute_code</span>
+                    <span class="tool-desc">Run Python code in a sandboxed environment and return output</span>
+                    <span class="tool-badge">Compute</span>
+                </div>
+                <div class="tool-item">
+                    <span class="tool-name">calculate</span>
+                    <span class="tool-desc">Evaluate mathematical expressions with scientific precision</span>
+                    <span class="tool-badge">Math</span>
+                </div>
+                <div class="tool-item">
+                    <span class="tool-name">scrape_url</span>
+                    <span class="tool-desc">Extract and parse content from a given URL</span>
+                    <span class="tool-badge">Scrape</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code -->
+        <section>
+            <div class="section-label">Quick Start</div>
+            <h2>Up and running in minutes</h2>
+            <p class="section-desc">
+                Clone, install, configure your API key, and start the agent.
+            </p>
+            <div class="code-section">
+                <div class="code-tabs">
+                    <button class="code-tab active" onclick="showTab('install')">Install</button>
+                    <button class="code-tab" onclick="showTab('run')">Run Agent</button>
+                    <button class="code-tab" onclick="showTab('example')">Example Query</button>
+                </div>
+                <pre class="code-block active" id="tab-install"><span class="comment"># Clone the repository</span>
+<span class="keyword">git</span> clone https://github.com/BabyChrist666/cohere-multi-tool-agent.git
+<span class="keyword">cd</span> cohere-multi-tool-agent
+
+<span class="comment"># Install dependencies</span>
+<span class="keyword">pip</span> install -r requirements.txt
+
+<span class="comment"># Set your Cohere API key</span>
+<span class="keyword">export</span> COHERE_API_KEY=<span class="string">"your-api-key"</span></pre>
+                <pre class="code-block" id="tab-run"><span class="comment"># Start the multi-tool agent</span>
+<span class="keyword">python</span> main.py
+
+<span class="comment"># Or run with FastAPI server</span>
+<span class="keyword">uvicorn</span> app:app --reload --port <span class="string">8000</span>
+
+<span class="comment"># Agent is now ready for queries</span>
+<span class="comment"># Visit http://localhost:8000/docs for API docs</span></pre>
+                <pre class="code-block" id="tab-example"><span class="comment"># Example: The agent auto-selects the right tool</span>
+
+<span class="keyword">&gt;</span> <span class="string">"What is the mass of Jupiter in kilograms?"</span>
+<span class="comment">  &#8627; Tool: calculate</span>
+<span class="comment">  &#8627; Result: 1.898 &times; 10^27 kg</span>
+
+<span class="keyword">&gt;</span> <span class="string">"Search for the latest news on AI agents"</span>
+<span class="comment">  &#8627; Tool: web_search</span>
+<span class="comment">  &#8627; Result: [synthesized search results]</span>
+
+<span class="keyword">&gt;</span> <span class="string">"Scrape the title from https://example.com"</span>
+<span class="comment">  &#8627; Tool: scrape_url</span>
+<span class="comment">  &#8627; Result: "Example Domain"</span></pre>
+            </div>
+        </section>
+
+        <!-- Tech Stack -->
+        <section>
+            <div class="section-label">Stack</div>
+            <h2>Built with</h2>
+            <p class="section-desc">
+                A focused set of technologies chosen for reliability, speed, and developer experience.
+            </p>
+            <div class="tech-grid">
+                <span class="tech-tag">Python</span>
+                <span class="tech-tag">Cohere Command R+</span>
+                <span class="tech-tag">FastAPI</span>
+                <span class="tech-tag">asyncio</span>
+                <span class="tech-tag">BeautifulSoup</span>
+                <span class="tech-tag">NumPy</span>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <div class="cta">
+            <div class="cta-card">
+                <h2>Start building with the agent</h2>
+                <p>Clone the repo, plug in your Cohere API key, and let the agent handle the rest.</p>
+                <div class="hero-actions">
+                    <a href="https://github.com/BabyChrist666/cohere-multi-tool-agent" class="btn btn-primary" target="_blank" rel="noopener">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        Get Started
+                    </a>
+                    <a href="https://github.com/BabyChrist666" class="btn btn-ghost" target="_blank" rel="noopener">All Projects</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-inner">
+                <p>&copy; 2025 Multi-Tool AI Agent. Built with Cohere Command R+.</p>
+                <div class="footer-links">
+                    <a href="https://github.com/BabyChrist666/cohere-multi-tool-agent" target="_blank" rel="noopener">GitHub</a>
+                    <a href="https://github.com/BabyChrist666" target="_blank" rel="noopener">All Projects</a>
+                    <a href="mailto:istiaqrafi39@gmail.com">Contact</a>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        function showTab(tab) {
+            document.querySelectorAll('.code-block').forEach(function(block) {
+                block.classList.remove('active');
+            });
+            document.querySelectorAll('.code-tab').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            document.getElementById('tab-' + tab).classList.add('active');
+            var tabs = document.querySelectorAll('.code-tab');
+            var tabMap = { 'install': 0, 'run': 1, 'example': 2 };
+            tabs[tabMap[tab]].classList.add('active');
+        }
+    </script>
+</body>
+</html>
